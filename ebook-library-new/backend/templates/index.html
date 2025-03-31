@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload and View PDF</title>
+</head>
+<body>
+    {{ if .pdf_url }}
+    <p>Uploaded PDF: <a href="{{ .pdf_url }}" target="_blank">{{ .pdf_name }}</a></p>
+    {{ end }}
+    
+    <form action="/" method="POST" enctype="multipart/form-data">
+        <input type="file" name="pdf" accept="application/pdf">
+        <input type="submit" value="Upload PDF">
+       
+        
+        {{ if .error }}
+        <p style="color: red;">{{ .error }}</p>
+        {{ end }}
+    </form>
+    <a href="/library">
+        <button>My Library</button>
+    </a>
+</body>
+</html>

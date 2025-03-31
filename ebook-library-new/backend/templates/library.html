@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Library</title>
+</head>
+<body>
+
+    <h2>My Library</h2>
+
+    <ul>
+        {{ range .files }}
+        <li><a href="{{ . }}" target="_blank">{{ . }}</a></li>
+        {{ end }}
+    </ul>
+
+    <button onclick="window.location.href='/'">Back to Upload</button>
+
+</body>
+</html>
