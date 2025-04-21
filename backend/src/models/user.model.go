@@ -10,4 +10,5 @@ type User struct {
 	Email      string             `bson:"email" json:"email"`
 	Password   string             `bson:"password,omitempty"`
 	ProfilePic string             `bson:"profilePic,omitempty" json:"profilePic"`
+	S3Folder   string             `bson:"s3Folder" json:"s3Folder"`
 }

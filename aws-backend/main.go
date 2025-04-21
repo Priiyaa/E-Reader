@@ -86,14 +86,27 @@ func main() {
 
 // Handle file upload logic
 func handleUpload(c *gin.Context, uploader FileUploader) {
-	// Get the uploaded file from the form
+	// Get the uploaded file
 	file, err := c.FormFile("pdf")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to upload file"})
 		return
 	}
 
-	// Open the file
+	// Get s3Folder from form data
+	s3Folder := c.PostForm("s3_path")
+	if s3Folder == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing s3_path"})
+		return
+	}
+
+	// Ensure folder ends with slash
+	if s3Folder[len(s3Folder)-1:] != "/" {
+		s3Folder += "/"
+	}
+
+
+	// Open the actual file
 	f, openErr := file.Open()
 	if openErr != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to open file"})
@@ -101,10 +114,13 @@ func handleUpload(c *gin.Context, uploader FileUploader) {
 	}
 	defer f.Close()
 
-	// Upload file to S3
+	// Final file path with folder prefix
+	s3Key := s3Folder + file.Filename
+
+	// Upload the actual file to S3
 	_, uploadErr := uploader.Upload(context.TODO(), &s3.PutObjectInput{
 		Bucket:      aws.String(bucketName),
-		Key:         aws.String(file.Filename),
+		Key:         aws.String(s3Key),
 		Body:        f,
 		ACL:         "public-read",
 		ContentType: aws.String("application/pdf"),
@@ -114,15 +130,25 @@ func handleUpload(c *gin.Context, uploader FileUploader) {
 		return
 	}
 
-	fileURL := "https://" + bucketName + ".s3.amazonaws.com/" + file.Filename
+	// Construct the final file URL
+	fileURL := "https://" + bucketName + ".s3.amazonaws.com/" + s3Key
 	c.JSON(http.StatusOK, gin.H{"pdf_url": fileURL, "pdf_name": file.Filename})
 }
 
 // Show library with all uploaded PDFs
 func showLibrary(c *gin.Context) {
+	userId := c.Query("userId")
+	if userId == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing userId"})
+		return
+	}
+
 	resp, err := s3Client.ListObjectsV2(context.TODO(), &s3.ListObjectsV2Input{
 		Bucket: aws.String(bucketName),
+		Prefix: aws.String("users/"+userId + "/"), // ✅ Limit search to user-specific folder
 	})
+
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load library"})
 		return
@@ -131,9 +157,11 @@ func showLibrary(c *gin.Context) {
 	var books []map[string]string
 	for _, item := range resp.Contents {
 		pdfURL := "https://" + bucketName + ".s3.amazonaws.com/" + *item.Key
-		thumbnailURL := "https://" + bucketName + ".s3.amazonaws.com/thumbnails/" + *item.Key + ".jpg" // Assuming thumbnails are stored in `/thumbnails/`
+		thumbnailURL := "https://" + bucketName + ".s3.amazonaws.com/thumbnails/" + *item.Key + ".jpg"
+
 		log.Printf("PDF URL: %s", pdfURL)
 		log.Printf("Thumbnail URL: %s", thumbnailURL)
+
 		books = append(books, map[string]string{
 			"url":       pdfURL,
 			"thumbnail": thumbnailURL,

@@ -1,5 +1,6 @@
 package controllers
 
+
 import (
 	"backend/src/lib"
 	db "backend/src/lib"
@@ -10,7 +11,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-
+    "fmt"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -54,13 +55,17 @@ func Signup(c *gin.Context) {
 		return
 	}
 
+    newUserID := primitive.NewObjectID()
+    s3Folder := fmt.Sprintf("users/%s/", newUserID.Hex())
 	// **Assign MongoDB ObjectID Correctly**
 	newUser := models.User{
-		ID:         primitive.NewObjectID(),
+		ID:         newUserID,
 		FullName:   input.FullName,
 		Email:      input.Email,
 		Password:   string(hashedPassword),
 		ProfilePic: "",
+		S3Folder:   s3Folder,
+
 	}
 
 	// Insert into MongoDB
@@ -130,6 +135,35 @@ func Logout(c *gin.Context) {
 	c.SetCookie("jwt", "", -1, "/", "", false, true)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
+}
+
+func GetUserByID(c *gin.Context) {
+	userID := c.Param("id")
+
+	objID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	collection := getUserCollection()
+
+	var user models.User
+	err = collection.FindOne(context.TODO(), bson.M{"_id": objID}).Decode(&user)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"user": gin.H{
+			"id":         user.ID.Hex(),
+			"fullName":   user.FullName,
+			"email":      user.Email,
+			"profilePic": user.ProfilePic,
+			"s3Folder":   user.S3Folder,
+		},
+	})
 }
 
 func UploadProfilePic(c *gin.Context) {

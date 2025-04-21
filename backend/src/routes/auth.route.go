@@ -15,6 +15,7 @@ func RegisterAuthRoutes(r *gin.Engine) {
 			auth.POST("/login", controllers.Login) // **New Login Route**
 			auth.POST("/logout", controllers.Logout)
 			auth.PUT("/update-profile", controllers.UploadProfilePic)
+            auth.GET("/user/:id", controllers.GetUserByID)
 		}
 	}
 }

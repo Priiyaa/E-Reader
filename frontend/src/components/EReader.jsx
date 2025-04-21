@@ -71,11 +71,12 @@ function EReader() {
         <>
           <div style={{
             margin: '20px auto',
-            maxWidth: ${pageWidth}px,
+            maxWidth: `${pageWidth}px`, 
             boxShadow: '0 0 10px rgba(0,0,0,0.1)',
             padding: '10px',
             backgroundColor: '#fff'
           }}>
+
             <Document
               file={pdfUrl}
               onLoadSuccess={onDocumentLoadSuccess}

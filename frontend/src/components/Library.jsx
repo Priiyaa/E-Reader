@@ -9,7 +9,8 @@ function Library() {
   const DEFAULT_COVER = "/default-thumbnail.jpeg";
 
   useEffect(() => {
-    fetch("http://localhost:5003/library")
+      const userId = localStorage.getItem("userId");
+    fetch("http://localhost:5003/library?userId="+userId.toString()) // Calling aws backend.
       .then(response => response.json())
       .then(data => {
         console.log("API response:", data);
